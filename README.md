@@ -8,8 +8,8 @@ This project provides a RESTful API for order and payment management using Larav
 1. **Clone the repository:**
 
    ```bash
-   git clone <repository-url>
-   cd project
+   git clone https://github.com/ahmednaserdev/OrderPaymentHub.git
+   cd OrderPaymentHub
    ```
 
 2. **Install dependencies:**
@@ -60,7 +60,7 @@ php artisan test
 
 ## Postman Collection
 
-- Import the provided Postman collection from `project/postman/Order & Payment - Managment.postman_collection.json` to explore API endpoints.
+- Import the provided Postman collection from `OrderPaymentHub/postman/Order & Payment - Managment.postman_collection.json` to explore API endpoints.
 
 ## API Endpoints
 
