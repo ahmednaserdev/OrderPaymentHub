@@ -6,6 +6,7 @@ use App\Http\Requests\ProcessPaymentRequest;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PaymentGateway\PaymentService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -28,10 +29,20 @@ class PaymentController extends Controller
         return response()->json($payments);
     }
 
+
     public function processPayment(ProcessPaymentRequest $request): JsonResponse
     {
-        $order = Order::findOrFail($request->order_id);
-        $payment = $this->paymentService->process($order, $request->payment_method);
-        return response()->json($payment, 201);
+        try {
+            $order = Order::findOrFail($request->order_id);
+            $payment = $this->paymentService->process($order, $request->payment_method);
+            return response()->json($payment, 201);
+        } catch (Exception $e) {
+            return $this->errorResponse('Payment processing failed', $e);
+        }
+    }
+
+    private function errorResponse(string $message, Exception $e): JsonResponse
+    {
+        return response()->json(['error' => $message, 'details' => $e->getMessage()], 500);
     }
 }

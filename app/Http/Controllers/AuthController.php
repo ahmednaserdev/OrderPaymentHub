@@ -2,62 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
-use App\Models\User;
+use App\Services\Auth\AuthService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Exception;
 
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request)
+    private AuthService $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
+    public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-            ]);
+            $userData = $request->only(['name', 'email', 'password']);
+            $response = $this->authService->register($userData);
 
-            $token = $user->createToken($request->email . '-' . $request->name . '-auth_token')->plainTextToken;
-
-            return response()->json([
-                'user' => $user,
-                'token' => $token,
-            ], 201);
+            return response()->json($response, 201);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
+            return $this->errorResponse('Registration failed', $e);
         }
     }
 
-    public function login(LoginRequest $request)
+
+    public function login(LoginRequest $request): JsonResponse
     {
         try {
-            if (!Auth::attempt($request->only('email', 'password'))) {
-                return response()->json(['error' => 'Unauthorized'], 401);
-            }
+            $credentials = $request->only(['email', 'password']);
+            $response = $this->authService->login($credentials);
 
-            $user = Auth::user();
-            $token = $user->createToken($user->email . '-' . $user->name . '-auth_token')->plainTextToken;
-
-            return response()->json([
-                'user' => $user,
-                'token' => $token,
-            ]);
+            return response()->json($response);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Login failed: ' . $e->getMessage()], 500);
+            return $this->errorResponse('Login failed', $e);
         }
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         try {
-            $request->user()->currentAccessToken()->delete();
+            $this->authService->logout($request->user());
+
             return response()->json(['message' => 'Logged out successfully']);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Logout failed: ' . $e->getMessage()], 500);
+            return $this->errorResponse('Logout failed', $e);
         }
+    }
+
+    private function errorResponse(string $message, Exception $e): JsonResponse
+    {
+        return response()->json(['error' => $message, 'details' => $e->getMessage()], 500);
     }
 }
